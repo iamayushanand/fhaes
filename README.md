@@ -15,7 +15,7 @@ Upon execution the executable will pseudorandomly generate <number-of-input> blo
 *A note on IV: It has been assumed that all bits except the last 16 are nonce while the last 16 have been reserved for counter, hence no matter what the IV input is given to the program it will set the last 16 bits to 0*
 
 ## Implementation Approaches
-![CTR mode](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/CTR_encryption_2.svg/512px-CTR_encryption_2.svg.png)
+![CTR mode](https://delta.cs.cinvestav.mx/~francisco/cripto/modes_archivos/Ctr_encryption.png)
 
 There are two implementations included in this repository. Both of which implement the `AES-CTR-128` Encryption in FHE setting. The difference between the two is that one utilises the high-level `FheUint8` API and lookup_table approach through `match_values` the other implementation utilises the fine grained `boolean` API and uses binary circuits. 
 
