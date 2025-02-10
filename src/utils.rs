@@ -1,5 +1,9 @@
+use tfhe::boolean::prelude::*;
 use tfhe::FheUint8;
 use tfhe::prelude::*;
+use rayon::prelude::*;
+
+use crate::fhaes_boolean::AesByte;
 
 pub fn get_trivial_block() -> [FheUint8; 16] {
     [();16].map(|_| FheUint8::encrypt_trivial(0u8))
@@ -83,4 +87,56 @@ pub fn key_expansion(key: &[u8; 16]) -> [u8; 176] {
         }
     }
     return expanded_key
+}
+pub fn xor_aes_byte(server_key: &ServerKey, a: &AesByte, b: &AesByte) -> AesByte {
+    let b_bits = b.get_bits();
+    let result_bits = a.get_bits()
+        .into_par_iter()
+        .zip(0..8)
+        .map(|(x, y)| server_key.xor(&x, &b_bits[y]))
+        .collect();
+    AesByte::new(result_bits)
+}
+
+pub fn mix_mux_gate(server_key: &ServerKey, h: &Ciphertext, t: &Ciphertext, f: &Ciphertext) -> AesByte {
+    //0x1B = 00011011
+    let mut result_bits: Vec<Ciphertext> = Vec::new();
+    let c0 = f.clone();
+    let c1 = f.clone();
+    let c2 = f.clone();
+    let c3 = server_key.mux(h, t, f);
+    let c4 = server_key.mux(h, t, f);
+    let c5 = f.clone();
+    let c6 = server_key.mux(h, t, f);
+    let c7 = server_key.mux(h, t, f);
+    result_bits.push(c7);
+    result_bits.push(c6);
+    result_bits.push(c5);
+    result_bits.push(c4);
+    result_bits.push(c3);
+    result_bits.push(c2);
+    result_bits.push(c1);
+    result_bits.push(c0);
+    AesByte::new(result_bits)
+    
+}
+
+pub fn byte_from_u8(client_key: &ClientKey, input: u8) -> AesByte {
+    let mut result_bytes = Vec::new();
+    for i in 0..8 {
+        let bit = ((input >> i) & 1) == 1;
+        result_bytes.push(client_key.encrypt(bit));
+    }
+    return AesByte::new(result_bytes)
+}
+
+pub fn xor_aes_byte_blocks(server_key: &ServerKey, a: &Vec<AesByte>, b: &Vec<AesByte>) -> Vec<AesByte> {
+    let result = a.par_iter().zip(0..16).map(|(x, y)| xor_aes_byte(server_key, x,&b[y])).collect();
+    result
+}
+
+pub fn generate_counters(client_key: &ClientKey, num_blocks: u16) -> (Vec<AesByte>, Vec<AesByte>) {
+   let counter1 = (0..num_blocks).into_par_iter().map(|x| byte_from_u8(client_key,u8::try_from(x&0xf).unwrap())).collect();
+   let counter2 = (0..num_blocks).into_par_iter().map(|x| byte_from_u8(client_key,u8::try_from((x>>4)&0xf).unwrap())).collect();
+   (counter1, counter2)
 }

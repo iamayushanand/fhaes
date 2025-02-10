@@ -219,6 +219,7 @@ impl AES {
         }
        
         for column in 0..4 {
+            
             result[0+4*column] = &b[0+4*column]^&block[3+4*column]^&block[2+4*column]^&b[1+4*column]^&block[1+4*column];
             result[1+4*column] = &b[1+4*column]^&block[0+4*column]^&block[3+4*column]^&b[2+4*column]^&block[2+4*column];
             result[2+4*column] = &b[2+4*column]^&block[1+4*column]^&block[0+4*column]^&b[3+4*column]^&block[3+4*column];

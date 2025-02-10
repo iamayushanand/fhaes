@@ -1,9 +1,11 @@
 pub mod fhaes;
 pub mod utils;
+pub mod fhaes_boolean;
 
 use tfhe::{ConfigBuilder, generate_keys, set_server_key, FheUint8};
+use fhaes_boolean::*;
 use fhaes::AES;
-use utils::key_expansion;
+use utils::{key_expansion, byte_from_u8};
 use tfhe::prelude::*;
 use rayon::prelude::*;
 
@@ -16,7 +18,9 @@ mod tests {
     use std::array;
 
     use rayon::prelude::*;
-    use tfhe::boolean::prelude::ServerKey;
+    use tfhe::boolean::{gen_keys, prelude::ServerKey};
+
+    use crate::utils::generate_counters;
 
     use super::*;
 
@@ -60,6 +64,7 @@ mod tests {
         let block_enc = block.map(|x| FheUint8::encrypt_trivial(x));
         fhe_aes.set_aes_key(expanded_key);
         let sub_clear = fhe_aes.encrypt_one_block(block);
+        println!("sub clear: {:?}", sub_clear);
         let sub_fhe: Vec::<u8> = fhe_aes.encrypt_one_block_fhe(block_enc).par_iter().map(|x|x.try_decrypt_trivial().unwrap()).collect();
         assert_eq!(sub_clear, sub_fhe[..]);
     }
@@ -92,5 +97,49 @@ mod tests {
         for i in 0..ctr_enc.len() {
             assert_eq!(ctr_enc[i], ctr_enc_fhe[i][..]);
         }
+    }
+
+    #[test]
+    fn aes_encrypt_one_block_boolfhe() {
+        let key = [0u8; 16];
+        let expanded_key = key_expansion(&key);
+        let (client_key, server_key) = gen_keys();
+        let fhe_key_aes = expanded_key.map(|x| byte_from_u8(&client_key, x));
+        let t = client_key.encrypt(true);
+        let f = client_key.encrypt(false);
+        let mut fhe_aes = AesBoolean::new(fhe_key_aes, server_key, t, f);
+        let block = array::from_fn::<u8, 16, _>(|x|x.try_into().unwrap());
+        let block_enc = block.into_par_iter().map(|x| byte_from_u8(&client_key, x)).collect();
+        let sub_fhe: Vec::<u8> = fhe_aes.encrypt_one_block_fhe(block_enc).par_iter().map(|x|x.decrypt(&client_key)).collect();
+        println!("fhe result bool: {:?}", sub_fhe)
+    }
+
+    #[test]
+    fn aes_encrypt_ctr_boolfhe() {
+        let key = [0u8; 16];
+        let expanded_key = key_expansion(&key);
+        let (client_key, server_key) = gen_keys();
+        let fhe_key_aes = expanded_key.map(|x| byte_from_u8(&client_key, x));
+        let mut iv = [1u8; 16];
+        iv[15] = 0u8;
+        iv[14] = 0u8;
+        iv[13] = 0u8;
+        iv[12] = 0u8;
+
+        let iv_fhe: Vec<AesByte> = iv.iter().map(|x| byte_from_u8(&client_key, *x)).collect();
+        let t = client_key.encrypt(true);
+        let f = client_key.encrypt(false);
+        let mut fhe_aes = AesBoolean::new(fhe_key_aes, server_key, t, f);
+        let block = array::from_fn::<u8, 16, _>(|x|x.try_into().unwrap());
+        let block_enc: Vec<AesByte> = block.into_par_iter().map(|x| byte_from_u8(&client_key, x)).collect();
+        let block_two = block_enc.clone();
+        let blocks = vec![block_enc, block_two.clone()];
+        let (counter1, counter2) = generate_counters(&client_key, 2);
+        let encrypted_blocks = fhe_aes.encrypt_ctr_mode_fhe(blocks, iv_fhe, counter1, counter2);
+        let decoded_encryption: Vec::<Vec<u8>> = encrypted_blocks.
+            par_iter().
+            map(|x|x.par_iter().map(|y| y.decrypt(&client_key)).collect()).collect();
+        println!("fhe result bool: {:?}", decoded_encryption);
+        assert_eq!(vec![vec![163u8, 193, 189, 7, 149, 185, 73, 225, 2, 137, 78, 5, 233, 84, 234, 237], vec![200u8, 201, 182, 23, 199, 152, 198, 229, 185, 16, 179, 154, 41, 136, 210, 72]], decoded_encryption);
     }
 }
