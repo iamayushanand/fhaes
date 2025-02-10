@@ -27,6 +27,8 @@ In both the implementations Key Expansion has been done as an offline step.
 
 It is assumed that the reader has some familiarity with the stages of AES encryption. In the next sections I describe some oobservations in both approaches.
 
+NOTE: To use the high level implementation Uncomment the code-block in the main.rs file and comment out the other main function.
+
 ### Optimisations and some observations on High level API impl
 - In this implementation the major step of SBox was implemented as a single Lookup Table using the `match_values` API. In trivial setting it took ~80ms to execute this stage.
 - The step of Rijndael MixColumns was adapted from the C example on this page [Wikipedia](https://en.wikipedia.org/wiki/Rijndael_MixColumns), This implementation required only bitwise shift, xor operators. An attempt was made to use `match_values` here to derive the `b` array faster however it only slowed it down further, Probably because these bitwise operations are optimised even on Integer FHE primitives!. This stage also took ~80ms in trivial setting.
@@ -43,6 +45,14 @@ On my Mac M2 with 8 GB memory and 10 cores the stats were(for 2 blocks):
 |----------------|----------------------|
 |  450ms(trivial)|         80s(but non trivial) |
 -------------------------------------------------
+
+## File Structure
+- main.rs: Contains code to demonstrate the usage and to build the executable.
+- fhaes: Contains the high level api implementation as well as the cleartext scratch implementation
+- fhaes_boolean: Containes the boolean primitive implementation.
+- utils: Contains utility functions required by either of fhaes or fhaes_boolean
+- lib: Contains tests
+
 ## References
 - [Sbox logic minimisation](https://link.springer.com/article/10.1007/s00145-012-9124-7)
 - [https://eprint.iacr.org/2023/1020](https://eprint.iacr.org/2023/1020)
