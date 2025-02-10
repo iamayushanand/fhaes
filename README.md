@@ -21,7 +21,9 @@ There are two implementations included in this repository. Both of which impleme
 
 Additionally a cleartext implementation has also been provided.
 
-While `FheUint8` is fast using the `trivial_encryption` it is too slow on my Mac M2 consumer PC in the real setting, Hence the main approach here is considered the `boolean` Fine-grained API.
+While `FheUint8` is fast using the `trivial_encryption` it is too slow on my Mac M2 consumer PC in the real setting, Hence the *main approach* here is considered the `boolean` Fine-grained API.
+
+In both the implementations Key Expansion has been done as an offline step.
 
 It is assumed that the reader has some familiarity with the stages of AES encryption. In the next sections I describe some oobservations in both approaches.
 
