@@ -1,0 +1,20 @@
+[package]
+name = "fhaes"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rayon = "1.10.0"
+tfhe = { git = "https://github.com/zama-ai/tfhe-rs.git", rev = "cd03b7eef7a1b9a3caaffb3966e480b60de7e8a2", features = [
+    "boolean",
+    "shortint",
+    "integer",
+    "noise-asserts",
+    "nightly-avx512"
+] }
+aes = "0.8.4"
+clap = { version = "4.5.28", features = ["derive"] }
+rand = "0.9.0"
+hex = "0.4.3"
