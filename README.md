@@ -40,8 +40,7 @@ On my Mac M2 with 8 GB memory and 10 cores the stats were(for 2 blocks):
 | High level API | Fine grained boolean |
 |----------------|----------------------|
 |  450ms(trivial)|         80s(but non trivial) |
-|----------------|-----------------------|
-
+-------------------------------------------------
 ## References
 - [Sbox logic minimisation](https://link.springer.com/article/10.1007/s00145-012-9124-7)
 - [https://eprint.iacr.org/2023/1020](https://eprint.iacr.org/2023/1020)
